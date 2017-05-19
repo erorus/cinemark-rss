@@ -1,0 +1,15 @@
+{
+  "name": "cinemark-rss",
+  "version": "0.0.1",
+  "description": "Generates an RSS feed of a Cinemark theater's listings",
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erorus/cinemark-rss.git"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "jsdom": "<10",
+    "rss": ""
+  }
+}
