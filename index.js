@@ -10,7 +10,7 @@ if (process.argv.length < 3) {
 
 var theaterId = process.argv[2];
 var now = new Date();
-if (now.getHours() > 8) {
+if (now.getHours() > 20) {
     now.setTime(now.getTime() + 86400000);
 }
 var month = '' + (now.getMonth() + 1);
