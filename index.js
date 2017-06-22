@@ -1,5 +1,7 @@
 var jsdom = require("jsdom");
 var RSS = require('rss');
+var async = require('async');
+var request = require('request');
 
 process.env.TZ = 'America/New_York';
 
@@ -13,26 +15,69 @@ var now = new Date();
 if (now.getHours() > 20) {
     now.setTime(now.getTime() + 86400000);
 }
-var month = '' + (now.getMonth() + 1);
-if (month.length < 2) {
-    month = '0' + month;
-}
-var dt = '' + now.getDate();
-if (dt.length < 2) {
-    dt = '0' + dt;
-}
 
-jsdom.env(
-    'https://www.cinemark.com/umbraco/surface/showtimes/getbytheaterid?theaterId=' + theaterId + '&showDate=' + month + '/' + dt + '/' + now.getFullYear(),
-    function(err, window) {
-        var details = getDetails(window.document);
-        var xml = buildFeed(details);
-        console.log(xml);
+var RtResponse = function(callback, error, response, body) {
+    if (error || response.statusCode != 200 || !body.results) {
+        return callback(error, []);
     }
-);
+    return callback(error, body.results);
+};
+
+var BuildRtRequest = function(type) {
+    return function(callback) {
+        request({ url: 'https://www.rottentomatoes.com/api/private/v2.0/browse?sortBy=popularity&type=' + type, json: true },
+            RtResponse.bind(null, callback));
+    }
+};
+
+var BuildCinemarkRequest = function(day) {
+    var when = new Date(now);
+
+    if (day) {
+        when.setTime(when.getTime() + 86400000 * day);
+    }
+
+    var month = '' + (when.getMonth() + 1);
+    if (month.length < 2) {
+        month = '0' + month;
+    }
+    var dt = '' + when.getDate();
+    if (dt.length < 2) {
+        dt = '0' + dt;
+    }
+
+    return function(callback) {
+        jsdom.env(
+            'https://www.cinemark.com/umbraco/surface/showtimes/getbytheaterid?theaterId=' + theaterId + '&showDate=' + month + '/' + dt + '/' + when.getFullYear(),
+            function(err, window) {
+                callback(err, getDetails(window.document));
+            }
+        );
+    }
+};
+
+async.parallel([
+    BuildRtRequest('in-theaters'),
+    BuildRtRequest('opening'),
+    BuildCinemarkRequest(0),
+    BuildCinemarkRequest(1)
+], function(err, results) {
+    var x, k, cine = {};
+    for (x = 2; x < results.length; x++) {
+        for (k in results[x]) {
+            if (!results[x].hasOwnProperty(k)) {
+                continue;
+            }
+            cine[k] = results[x][k];
+        }
+    }
+
+    var xml = buildFeed(cine, results[0].concat(results[1]));
+    console.log(xml);
+});
 
 function getDetails(document) {
-    var details = [];
+    var details = {};
     var movieBlocks = document.getElementsByClassName('showtimeMovieBlock');
     var movie;
     for (var x = 0; x < movieBlocks.length; x++) {
@@ -112,20 +157,20 @@ function getTimes(timesDiv) {
     return times;
 }
 
-function buildFeed(details) {
+function buildFeed(cinemark, rtResults) {
     var feed = new RSS({
         title: 'Cinemark Theater ' + theaterId,
         site_url: 'https://www.cinemark.com/theatre-' + theaterId,
     });
 
-    var movie, desc, type, x;
+    var movie, desc, type, x, rt;
 
-    for (var id in details) {
-        if (!details.hasOwnProperty(id)) {
+    for (var id in cinemark) {
+        if (!cinemark.hasOwnProperty(id)) {
             continue;
         }
 
-        movie = details[id];
+        movie = cinemark[id];
         desc = '';
 
         for (type in movie.showtimes) {
@@ -143,6 +188,13 @@ function buildFeed(details) {
             desc = '<img src="' + movie.poster + '"><br><br>' + desc;
         }
 
+        rt = findRtRecord(movie.name, rtResults);
+
+        if (rt !== false) {
+            desc += '<br><br><a href="https://www.rottentomatoes.com' + rt.url + '">Rotten Tomatoes</a>: ';
+            desc += ((rt.hasOwnProperty('tomatoScore') && rt.tomatoScore != null) ? rt.tomatoScore + '% - ' : '') + rt.synopsis;
+        }
+
         feed.item({
             title: movie.name,
             description: desc,
@@ -151,4 +203,33 @@ function buildFeed(details) {
     }
 
     return feed.xml({indent: true});
+}
+
+function findRtRecord(name, rt) {
+    var candidates = [];
+    name = name.toLowerCase()
+        .replace(/\([^\)]*subtitle[^\)]*\)/g, '')
+        .replace(/[^a-z0-9 ]/g, '')
+        .replace(/ {2,}/g, ' ')
+        .replace(/^ | $/g, '');
+
+    for (var x = 0; x < rt.length; x++) {
+        if (!rt[x].cinemarkTitle) {
+            rt[x].cinemarkTitle = rt[x].title.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/ {2,}/g, ' ').replace(/^ | $/g, '');
+        }
+
+        if (rt[x].cinemarkTitle.indexOf(name) == 0 || name.indexOf(rt[x].cinemarkTitle) == 0) {
+            candidates.push(rt[x]);
+        }
+    }
+
+    candidates.sort(function(a,b){
+        return b.cinemarkTitle.length - a.cinemarkTitle.length;
+    });
+
+    if (candidates.length) {
+        return candidates.shift();
+    }
+
+    return false;
 }
