@@ -16,18 +16,18 @@ I use it to keep updated on which movies are in my local theatre.
 >
 > ![movie poster](https://www.cinemark.com/media/20672/md_t5_tlk.jpg)
 >
-> **Cinemark XD / RealD 3D / Reserved Seating**
+> **Cinemark XD / RealD 3D / Reserved Seating**  
 > 4:00pm - 11:00pm
-> 
-> **RealD 3D / Reserved Seating**
+>
+> **RealD 3D / Reserved Seating**  
 > 10:40am
-> 
-> **Cinemark XD / Reserved Seating**
+>
+> **Cinemark XD / Reserved Seating**  
 > 12:30pm - 7:30pm
-> 
-> **Digital Cinema / Reserved Seating**
+>
+> **Digital Cinema / Reserved Seating**  
 > 2:10pm - 5:40pm - 9:10pm
-> 
+>
 > [Rotten Tomatoes](https://www.rottentomatoes.com/m/transformers_the_last_knight_2017): 15% - Cacophonous, thinly plotted, and boasting state-of-the-art special effects, The Last Knight is pretty much what you'd expect from the fifth installment of the Transformers franchise.
 
 ## Note
