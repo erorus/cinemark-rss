@@ -208,7 +208,8 @@ function buildFeed(cinemark, rtResults) {
 function findRtRecord(name, rt) {
     var candidates = [];
     name = name.toLowerCase()
-        .replace(/\([^\)]*subtitle[^\)]*\)/g, '')
+        .replace(/\([^\)]*(?:subtitle|dubbed)[^\)]*\)/gi, '') // (with English subtitles) or (English dubbed)
+        .replace(/\s*-\s*SMC\s*$/i, '') // summer movie clubhouse
         .replace(/[^a-z0-9 ]/g, '')
         .replace(/ {2,}/g, ' ')
         .replace(/^ | $/g, '');
