@@ -105,6 +105,15 @@ function getMovieDetails(movieDiv) {
         }
     }
 
+    if (d = movieDiv.getElementsByClassName('movieLink')) {
+        for (var x = 0; x < d.length; x++) {
+            if (d[x].tagName.toLowerCase() == 'a' && d[x].href) {
+                movie.url = d[x].href;
+                break;
+            }
+        }
+    }
+
     movie.showtimes = {};
 
     d = movieDiv.getElementsByClassName('showtimePrintType');
@@ -199,6 +208,7 @@ function buildFeed(cinemark, rtResults) {
             title: movie.name,
             description: desc,
             guid: 'cinemark-rss-theater' + theaterId + '-movie' + id,
+            url: movie.url,
         });
     }
 
